@@ -141,18 +141,35 @@ export default function NovaOcorrencia() {
     if (!nfBusca.trim()) { setError('Informe o número da NF'); return }
     setSearching(true); setError(''); setNfData(null)
 
+    const cnpjs = user.cnpjs.length ? user.cnpjs : ['__none__']
+    const numLimpo = nfBusca.trim().replace(/^0+/, '') || nfBusca.trim()
+
     const { data, error: err } = await supabase
       .from('active_webhooks')
       .select('numero, serie, chave_nfe, data_emissao, destinatario_nome, destinatario_cnpj, transportador_nome, transportador_cnpj, valor_mercadoria, volumes, natureza_operacao')
-      .eq('tipo', 'nfe')
-      .eq('numero', nfBusca.trim())
-      .in('transportador_cnpj', user.cnpjs.length ? user.cnpjs : ['__none__'])
+      .eq('tipo', 'nota_fiscal')
+      .in('transportador_cnpj', cnpjs)
+      .or(`numero.eq.${nfBusca.trim()},numero.eq.${numLimpo}`)
+      .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
 
     setSearching(false)
     if (err || !data) {
-      setError('NF não encontrada ou não pertence à sua transportadora. Verifique o número e tente novamente.')
+      // Verifica se a NF existe mas com outro CNPJ (erro de cadastro)
+      const { data: semFiltro } = await supabase
+        .from('active_webhooks')
+        .select('numero, transportador_cnpj, transportador_nome')
+        .eq('tipo', 'nota_fiscal')
+        .or(`numero.eq.${nfBusca.trim()},numero.eq.${numLimpo}`)
+        .limit(1)
+        .maybeSingle()
+
+      if (semFiltro) {
+        setError(`NF ${nfBusca.trim()} encontrada, mas vinculada à "${semFiltro.transportador_nome}" (CNPJ: ${semFiltro.transportador_cnpj}). Verifique seu cadastro com a Linea.`)
+      } else {
+        setError(`NF ${nfBusca.trim()} não encontrada no sistema. Verifique o número e tente novamente.`)
+      }
       return
     }
     setNfData(data)
