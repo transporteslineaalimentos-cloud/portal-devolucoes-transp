@@ -7,6 +7,7 @@ import DetalheOcorrencia from './pages/DetalheOcorrencia'
 import TrocarSenha from './pages/TrocarSenha'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminDetalhe from './pages/admin/AdminDetalhe'
+import AdminTransportadores from './pages/admin/AdminTransportadores'
 
 function RequireAuth({ children, requireAdmin = false }) {
   const { user, loading } = useAuth()
@@ -36,6 +37,7 @@ function AppRoutes() {
       {/* Admin routes */}
       <Route path="/admin" element={<RequireAuth requireAdmin><AdminDashboard /></RequireAuth>} />
       <Route path="/admin/ocorrencia/:id" element={<RequireAuth requireAdmin><AdminDetalhe /></RequireAuth>} />
+      <Route path="/admin/transportadores" element={<RequireAuth requireAdmin><AdminTransportadores /></RequireAuth>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
