@@ -142,37 +142,40 @@ export default function NovaOcorrencia() {
     setSearching(true); setError(''); setNfData(null)
 
     const cnpjs = user.cnpjs.length ? user.cnpjs : ['__none__']
-    const numLimpo = nfBusca.trim().replace(/^0+/, '') || nfBusca.trim()
+    const num = nfBusca.trim()
 
+    // Busca simples: tipo + numero + cnpj do transportador
     const { data, error: err } = await supabase
       .from('active_webhooks')
       .select('numero, serie, chave_nfe, data_emissao, destinatario_nome, destinatario_cnpj, transportador_nome, transportador_cnpj, valor_mercadoria, volumes, natureza_operacao')
       .eq('tipo', 'nota_fiscal')
+      .eq('numero', num)
       .in('transportador_cnpj', cnpjs)
-      .or(`numero.eq.${nfBusca.trim()},numero.eq.${numLimpo}`)
       .order('created_at', { ascending: false })
       .limit(1)
-      .maybeSingle()
 
     setSearching(false)
-    if (err || !data) {
-      // Verifica se a NF existe mas com outro CNPJ (erro de cadastro)
-      const { data: semFiltro } = await supabase
+
+    const row = data?.[0]
+
+    if (err || !row) {
+      // Verifica se a NF existe mas com CNPJ diferente
+      const { data: check } = await supabase
         .from('active_webhooks')
         .select('numero, transportador_cnpj, transportador_nome')
         .eq('tipo', 'nota_fiscal')
-        .or(`numero.eq.${nfBusca.trim()},numero.eq.${numLimpo}`)
+        .eq('numero', num)
         .limit(1)
-        .maybeSingle()
 
-      if (semFiltro) {
-        setError(`NF ${nfBusca.trim()} encontrada, mas vinculada à "${semFiltro.transportador_nome}" (CNPJ: ${semFiltro.transportador_cnpj}). Verifique seu cadastro com a Linea.`)
+      const found = check?.[0]
+      if (found) {
+        setError(`NF ${num} encontrada, mas vinculada à "${found.transportador_nome}" (CNPJ: ${found.transportador_cnpj}). Verifique seu cadastro com a Linea.`)
       } else {
-        setError(`NF ${nfBusca.trim()} não encontrada no sistema. Verifique o número e tente novamente.`)
+        setError(`NF ${num} não encontrada. Verifique o número e tente novamente.`)
       }
       return
     }
-    setNfData(data)
+    setNfData(row)
   }
 
   function addFiles(fileList) {
