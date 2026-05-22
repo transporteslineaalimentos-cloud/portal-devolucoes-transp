@@ -65,6 +65,7 @@ export default function Login() {
       }
       login(user)
       if (user.tipo === 'admin') navigate('/admin')
+      else if (user.tipo === 'analista') navigate('/analista')
       else if (user.precisa_trocar_senha) navigate('/trocar-senha')
       else navigate('/dashboard')
     } catch (err) {

@@ -48,7 +48,7 @@ export async function loginAdmin(email, password) {
 
   const { data: admin, error } = await supabase
     .from('portal_admin_users')
-    .select('id, nome, email, ativo, senha_hash')
+    .select('id, nome, email, ativo, senha_hash, perfil')
     .eq('email', email.toLowerCase().trim())
     .single()
 
@@ -60,7 +60,7 @@ export async function loginAdmin(email, password) {
     id: admin.id,
     nome: admin.nome,
     email: admin.email,
-    tipo: 'admin',
+    tipo: admin.perfil || 'admin',
     cnpjs: [],
     transportador_nome: 'Linea Alimentos',
   }

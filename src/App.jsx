@@ -8,13 +8,19 @@ import TrocarSenha from './pages/TrocarSenha'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminDetalhe from './pages/admin/AdminDetalhe'
 import AdminTransportadores from './pages/admin/AdminTransportadores'
+import CobrancaNFD from './pages/admin/CobrancaNFD'
+import AnalistaDashboard from './pages/analista/AnalistaDashboard'
+import AnalistaDetalhe from './pages/analista/AnalistaDetalhe'
 
-function RequireAuth({ children, requireAdmin = false }) {
+function RequireAuth({ children, roles }) {
   const { user, loading } = useAuth()
   if (loading) return null
   if (!user) return <Navigate to="/" replace />
-  if (requireAdmin && user.tipo !== 'admin') return <Navigate to="/dashboard" replace />
-  if (!requireAdmin && user.tipo === 'admin') return <Navigate to="/admin" replace />
+  if (roles && !roles.includes(user.tipo)) {
+    if (user.tipo === 'admin') return <Navigate to="/admin" replace />
+    if (user.tipo === 'analista') return <Navigate to="/analista" replace />
+    return <Navigate to="/dashboard" replace />
+  }
   return children
 }
 
@@ -24,20 +30,25 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={
         user
-          ? <Navigate to={user.tipo === 'admin' ? '/admin' : '/dashboard'} replace />
+          ? <Navigate to={user.tipo==='admin'?'/admin':user.tipo==='analista'?'/analista':'/dashboard'} replace />
           : <Login />
       } />
       <Route path="/trocar-senha" element={<TrocarSenha />} />
 
-      {/* Transportador routes */}
-      <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
-      <Route path="/nova" element={<RequireAuth><NovaOcorrencia /></RequireAuth>} />
-      <Route path="/ocorrencia/:id" element={<RequireAuth><DetalheOcorrencia /></RequireAuth>} />
+      {/* Transportador */}
+      <Route path="/dashboard" element={<RequireAuth roles={['transportador']}><Dashboard /></RequireAuth>} />
+      <Route path="/nova" element={<RequireAuth roles={['transportador']}><NovaOcorrencia /></RequireAuth>} />
+      <Route path="/ocorrencia/:id" element={<RequireAuth roles={['transportador']}><DetalheOcorrencia /></RequireAuth>} />
 
-      {/* Admin routes */}
-      <Route path="/admin" element={<RequireAuth requireAdmin><AdminDashboard /></RequireAuth>} />
-      <Route path="/admin/ocorrencia/:id" element={<RequireAuth requireAdmin><AdminDetalhe /></RequireAuth>} />
-      <Route path="/admin/transportadores" element={<RequireAuth requireAdmin><AdminTransportadores /></RequireAuth>} />
+      {/* Analista */}
+      <Route path="/analista" element={<RequireAuth roles={['analista','admin']}><AnalistaDashboard /></RequireAuth>} />
+      <Route path="/analista/:id" element={<RequireAuth roles={['analista','admin']}><AnalistaDetalhe /></RequireAuth>} />
+
+      {/* Admin */}
+      <Route path="/admin" element={<RequireAuth roles={['admin']}><AdminDashboard /></RequireAuth>} />
+      <Route path="/admin/cobranca-nfd" element={<RequireAuth roles={['admin']}><CobrancaNFD /></RequireAuth>} />
+      <Route path="/admin/ocorrencia/:id" element={<RequireAuth roles={['admin']}><AdminDetalhe /></RequireAuth>} />
+      <Route path="/admin/transportadores" element={<RequireAuth roles={['admin']}><AdminTransportadores /></RequireAuth>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
